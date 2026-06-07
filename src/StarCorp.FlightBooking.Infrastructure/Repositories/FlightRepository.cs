@@ -43,7 +43,9 @@ public class FlightRepository : IFlightRepository
         string? destination,
         DateTime? date,
         FareClass? fareClass,
-        int passengers)
+        int passengers,
+        decimal? minPrice = null,
+        decimal? maxPrice = null)
     {
         var conditions = new List<string> { "f.Status = 'Scheduled'", "f.DepartureTime > GETUTCDATE()" };
         var parameters = new DynamicParameters();
@@ -75,6 +77,18 @@ public class FlightRepository : IFlightRepository
         {
             conditions.Add("f.AvailableSeatsExecutive >= @Passengers");
             parameters.Add("Passengers", passengers);
+        }
+
+        if (minPrice.HasValue)
+        {
+            conditions.Add("f.BasePriceEconomy >= @MinPrice");
+            parameters.Add("MinPrice", minPrice.Value);
+        }
+
+        if (maxPrice.HasValue)
+        {
+            conditions.Add("f.BasePriceEconomy <= @MaxPrice");
+            parameters.Add("MaxPrice", maxPrice.Value);
         }
 
         var sql = $"""

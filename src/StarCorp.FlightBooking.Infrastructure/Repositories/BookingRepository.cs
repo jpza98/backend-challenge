@@ -141,4 +141,32 @@ public class BookingRepository : IBookingRepository
             new { Status = status.ToString(), Id = id });
         return rows > 0;
     }
+
+    public async Task AddPaymentAsync(Payment payment)
+    {
+        const string sql = """
+            INSERT INTO Payments (BookingId, Method, Amount, Status, PaidAt, TransactionId)
+            VALUES (@BookingId, @Method, @Amount, @Status, @PaidAt, @TransactionId)
+            """;
+
+        using var conn = CreateConnection();
+        await conn.ExecuteAsync(sql, new
+        {
+            payment.BookingId,
+            Method = payment.Method.ToString(),
+            payment.Amount,
+            payment.Status,
+            payment.PaidAt,
+            payment.TransactionId
+        });
+    }
+
+    public async Task<bool> UpdateTotalAmountAsync(int bookingId, decimal totalAmount)
+    {
+        using var conn = CreateConnection();
+        var rows = await conn.ExecuteAsync(
+            "UPDATE Bookings SET TotalAmount = @TotalAmount WHERE Id = @Id",
+            new { TotalAmount = totalAmount, Id = bookingId });
+        return rows > 0;
+    }
 }

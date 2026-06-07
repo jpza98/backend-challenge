@@ -10,4 +10,6 @@ public interface IBookingRepository
     Task<IEnumerable<Booking>> GetByCustomerIdAsync(int customerId);
     Task<Booking> CreateAsync(Booking booking);
     Task<bool> UpdateStatusAsync(int id, BookingStatus status);
+    Task AddPaymentAsync(Payment payment);
+    Task<bool> UpdateTotalAmountAsync(int bookingId, decimal totalAmount);
 }
