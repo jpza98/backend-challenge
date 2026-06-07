@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/StarCorp.FlightBooking.Api/StarCorp.FlightBooking.Api.csproj" />
+    <Project Path="src/StarCorp.FlightBooking.Core/StarCorp.FlightBooking.Core.csproj" />
+    <Project Path="src/StarCorp.FlightBooking.Infrastructure/StarCorp.FlightBooking.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StarCorp.FlightBooking.Tests/StarCorp.FlightBooking.Tests.csproj" />
+  </Folder>
+</Solution>

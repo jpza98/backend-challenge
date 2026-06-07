@@ -1,0 +1,6 @@
+@StarCorp.FlightBooking.Api_HostAddress = http://localhost:5129
+
+GET {{StarCorp.FlightBooking.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
