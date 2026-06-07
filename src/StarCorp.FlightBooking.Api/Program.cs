@@ -17,10 +17,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 DapperConfig.RegisterTypeHandlers();
 
-builder.Services.AddScoped<IFlightRepository>(_   => new FlightRepository(connectionString));
-builder.Services.AddScoped<IBookingRepository>(_  => new BookingRepository(connectionString));
+builder.Services.AddScoped<IFlightRepository>(_ => new FlightRepository(connectionString));
+builder.Services.AddScoped<IBookingRepository>(_ => new BookingRepository(connectionString));
 builder.Services.AddScoped<ICustomerRepository>(_ => new CustomerRepository(connectionString));
-builder.Services.AddScoped<IPricingService,      PricingService>();
+builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<ICancellationService, CancellationService>();
 
 var app = builder.Build();

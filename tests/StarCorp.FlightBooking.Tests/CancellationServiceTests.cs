@@ -11,24 +11,24 @@ public class CancellationServiceTests
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private static Booking MakeBooking(
-        FareClass    fareClass,
+        FareClass fareClass,
         BookingStatus status,
-        double       daysUntilFlight,
-        DateTime?    paidAt = null,
-        decimal      total  = 1000m) => new()
-    {
-        Id          = 1,
-        FareClass   = fareClass,
-        Status      = status,
-        TotalAmount = total,
-        Flight = new Flight
+        double daysUntilFlight,
+        DateTime? paidAt = null,
+        decimal total = 1000m) => new()
         {
-            DepartureTime = DateTime.UtcNow.AddDays(daysUntilFlight)
-        },
-        Payment = paidAt.HasValue
+            Id = 1,
+            FareClass = fareClass,
+            Status = status,
+            TotalAmount = total,
+            Flight = new Flight
+            {
+                DepartureTime = DateTime.UtcNow.AddDays(daysUntilFlight)
+            },
+            Payment = paidAt.HasValue
             ? new Payment { PaidAt = paidAt }
             : null
-    };
+        };
 
     // ─── CanCancel ────────────────────────────────────────────────────────────
 
@@ -62,14 +62,14 @@ public class CancellationServiceTests
         var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(1.0m,          result.RefundPercentage);
-        Assert.Equal(1000m,         result.RefundAmount);
+        Assert.Equal(1.0m, result.RefundPercentage);
+        Assert.Equal(1000m, result.RefundAmount);
     }
 
     [Fact]
     public void Exactly24hAfterPayment_StillFullRefund()
     {
-        var paidAt  = DateTime.UtcNow.AddHours(-24).AddMinutes(1); // 23h59 atrás
+        var paidAt = DateTime.UtcNow.AddHours(-24).AddMinutes(1); // 23h59 atrás
         var booking = MakeBooking(FareClass.Economy, BookingStatus.Confirmed,
             daysUntilFlight: 1, paidAt: paidAt);
 
@@ -98,10 +98,10 @@ public class CancellationServiceTests
     public void Economy_MoreThan7Days_FullRefund()
     {
         var booking = MakeBooking(FareClass.Economy, BookingStatus.Confirmed, daysUntilFlight: 10);
-        var result  = _sut.CalculateRefund(booking, DateTime.UtcNow);
+        var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(1.0m,  result.RefundPercentage);
+        Assert.Equal(1.0m, result.RefundPercentage);
         Assert.Equal(1000m, result.RefundAmount);
     }
 
@@ -112,7 +112,7 @@ public class CancellationServiceTests
     public void Economy_TwoToSevenDays_FiftyPercentRefund(double days)
     {
         var booking = MakeBooking(FareClass.Economy, BookingStatus.Confirmed, daysUntilFlight: days);
-        var result  = _sut.CalculateRefund(booking, DateTime.UtcNow);
+        var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(0.5m, result.RefundPercentage);
@@ -126,7 +126,7 @@ public class CancellationServiceTests
     public void Economy_LessThan2Days_NoRefund(double days)
     {
         var booking = MakeBooking(FareClass.Economy, BookingStatus.Confirmed, daysUntilFlight: days);
-        var result  = _sut.CalculateRefund(booking, DateTime.UtcNow);
+        var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(0m, result.RefundPercentage);
@@ -139,10 +139,10 @@ public class CancellationServiceTests
     public void Executive_MoreThan7Days_FullRefund()
     {
         var booking = MakeBooking(FareClass.Executive, BookingStatus.Confirmed, daysUntilFlight: 8);
-        var result  = _sut.CalculateRefund(booking, DateTime.UtcNow);
+        var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(1.0m,  result.RefundPercentage);
+        Assert.Equal(1.0m, result.RefundPercentage);
         Assert.Equal(1000m, result.RefundAmount);
     }
 
@@ -153,11 +153,11 @@ public class CancellationServiceTests
     public void Executive_TwoToSevenDays_SeventyFivePercentRefund(double days)
     {
         var booking = MakeBooking(FareClass.Executive, BookingStatus.Confirmed, daysUntilFlight: days);
-        var result  = _sut.CalculateRefund(booking, DateTime.UtcNow);
+        var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(0.75m, result.RefundPercentage);
-        Assert.Equal(750m,  result.RefundAmount);
+        Assert.Equal(750m, result.RefundAmount);
     }
 
     [Theory]
@@ -167,11 +167,11 @@ public class CancellationServiceTests
     public void Executive_LessThan2Days_TwentyFivePercentRefund(double days)
     {
         var booking = MakeBooking(FareClass.Executive, BookingStatus.Confirmed, daysUntilFlight: days);
-        var result  = _sut.CalculateRefund(booking, DateTime.UtcNow);
+        var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(0.25m, result.RefundPercentage);
-        Assert.Equal(250m,  result.RefundAmount);
+        Assert.Equal(250m, result.RefundAmount);
     }
 
     // ─── Status inválido ──────────────────────────────────────────────────────
@@ -180,7 +180,7 @@ public class CancellationServiceTests
     public void AlreadyCancelled_ReturnsFailure()
     {
         var booking = MakeBooking(FareClass.Economy, BookingStatus.Cancelled, daysUntilFlight: 10);
-        var result  = _sut.CalculateRefund(booking, DateTime.UtcNow);
+        var result = _sut.CalculateRefund(booking, DateTime.UtcNow);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(0m, result.RefundAmount);
@@ -191,10 +191,10 @@ public class CancellationServiceTests
     {
         var booking = new Booking
         {
-            Status      = BookingStatus.Confirmed,
-            FareClass   = FareClass.Economy,
+            Status = BookingStatus.Confirmed,
+            FareClass = FareClass.Economy,
             TotalAmount = 500m,
-            Flight      = null
+            Flight = null
         };
 
         Assert.Throws<InvalidOperationException>(

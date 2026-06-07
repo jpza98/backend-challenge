@@ -97,8 +97,8 @@ public class BookingRepository : IBookingRepository
                 booking.BookingCode,
                 booking.CustomerId,
                 booking.FlightId,
-                FareClass   = booking.FareClass.ToString(),
-                Status      = booking.Status.ToString(),
+                FareClass = booking.FareClass.ToString(),
+                Status = booking.Status.ToString(),
                 booking.TotalAmount,
                 booking.CreatedAt
             }, tx);
@@ -115,7 +115,7 @@ public class BookingRepository : IBookingRepository
                 await conn.ExecuteAsync(insertPayment, new
                 {
                     booking.Payment.BookingId,
-                    Method        = booking.Payment.Method.ToString(),
+                    Method = booking.Payment.Method.ToString(),
                     booking.Payment.Amount,
                     booking.Payment.Status,
                     booking.Payment.PaidAt,

@@ -6,44 +6,60 @@ namespace StarCorp.FlightBooking.Core.Services;
 
 public class PricingService : IPricingService
 {
-    private const decimal EconomyMultiplier   = 1.0m;
+    private const decimal EconomyMultiplier = 1.0m;
     private const decimal ExecutiveMultiplier = 2.5m;
-    private const decimal TaxRate             = 0.08m;
-    private const decimal TaxPerPassenger     = 45m;
-    private const decimal ServiceFeeRate      = 0.05m;
-    private const decimal CreditCardRate      = 0.03m;
-    private const decimal PixRate             = -0.05m;
-    private const decimal BoletoRate          = 0.01m;
+    private const decimal TaxRate = 0.08m;
+    private const decimal TaxPerPassenger = 45m;
+    private const decimal ServiceFeeRate = 0.05m;
+    private const decimal CreditCardRate = 0.03m;
+    private const decimal PixRate = -0.05m;
+    private const decimal BoletoRate = 0.01m;
+
+    public PriceCalculationResult CalculatePrePaymentPrice(
+        decimal basePriceEconomy,
+        FareClass fareClass,
+        int passengerCount)
+    {
+        decimal classMultiplier = fareClass == FareClass.Executive ? ExecutiveMultiplier : EconomyMultiplier;
+        decimal baseAmount = basePriceEconomy * classMultiplier * passengerCount;
+        decimal taxes = baseAmount * TaxRate + TaxPerPassenger * passengerCount;
+        decimal serviceFee = (baseAmount + taxes) * ServiceFeeRate;
+
+        return new PriceCalculationResult
+        {
+            BaseAmount = baseAmount,
+            Taxes = taxes,
+            ServiceFee = serviceFee,
+            PaymentAdjustment = 0m,
+            TotalAmount = baseAmount + taxes + serviceFee
+        };
+    }
 
     public PriceCalculationResult CalculatePrice(
-        decimal       basePriceEconomy,
-        FareClass     fareClass,
-        int           passengerCount,
+        decimal basePriceEconomy,
+        FareClass fareClass,
+        int passengerCount,
         PaymentMethod paymentMethod)
     {
-        decimal classMultiplier  = fareClass == FareClass.Executive ? ExecutiveMultiplier : EconomyMultiplier;
-        decimal baseAmount       = basePriceEconomy * classMultiplier * passengerCount;
-        decimal taxes            = baseAmount * TaxRate + TaxPerPassenger * passengerCount;
-        decimal serviceFee       = (baseAmount + taxes) * ServiceFeeRate;
-        decimal prePaymentTotal  = baseAmount + taxes + serviceFee;
+        var pre = CalculatePrePaymentPrice(basePriceEconomy, fareClass, passengerCount);
 
         decimal paymentRate = paymentMethod switch
         {
             PaymentMethod.CreditCard => CreditCardRate,
-            PaymentMethod.Pix        => PixRate,
-            PaymentMethod.Boleto     => BoletoRate,
-            _                        => 0m
+            PaymentMethod.Pix => PixRate,
+            PaymentMethod.Boleto => BoletoRate,
+            _ => 0m
         };
 
-        decimal paymentAdjustment = prePaymentTotal * paymentRate;
+        decimal paymentAdjustment = pre.TotalAmount * paymentRate;
 
         return new PriceCalculationResult
         {
-            BaseAmount        = baseAmount,
-            Taxes             = taxes,
-            ServiceFee        = serviceFee,
+            BaseAmount = pre.BaseAmount,
+            Taxes = pre.Taxes,
+            ServiceFee = pre.ServiceFee,
             PaymentAdjustment = paymentAdjustment,
-            TotalAmount       = prePaymentTotal + paymentAdjustment
+            TotalAmount = pre.TotalAmount + paymentAdjustment
         };
     }
 }

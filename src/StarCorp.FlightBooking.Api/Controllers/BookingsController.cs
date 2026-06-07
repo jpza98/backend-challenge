@@ -10,23 +10,23 @@ namespace StarCorp.FlightBooking.Api.Controllers;
 [Route("api/[controller]")]
 public class BookingsController : ControllerBase
 {
-    private readonly IBookingRepository  _bookingRepo;
-    private readonly IFlightRepository   _flightRepo;
+    private readonly IBookingRepository _bookingRepo;
+    private readonly IFlightRepository _flightRepo;
     private readonly ICustomerRepository _customerRepo;
-    private readonly IPricingService     _pricingService;
+    private readonly IPricingService _pricingService;
     private readonly ICancellationService _cancellationService;
 
     public BookingsController(
-        IBookingRepository   bookingRepo,
-        IFlightRepository    flightRepo,
-        ICustomerRepository  customerRepo,
-        IPricingService      pricingService,
+        IBookingRepository bookingRepo,
+        IFlightRepository flightRepo,
+        ICustomerRepository customerRepo,
+        IPricingService pricingService,
         ICancellationService cancellationService)
     {
-        _bookingRepo         = bookingRepo;
-        _flightRepo          = flightRepo;
-        _customerRepo        = customerRepo;
-        _pricingService      = pricingService;
+        _bookingRepo = bookingRepo;
+        _flightRepo = flightRepo;
+        _customerRepo = customerRepo;
+        _pricingService = pricingService;
         _cancellationService = cancellationService;
     }
 
@@ -44,16 +44,27 @@ public class BookingsController : ControllerBase
         if (!flight.HasAvailableSeats(request.FareClass, request.Passengers.Count))
             return Conflict("Assentos insuficientes para a classe e quantidade de passageiros solicitada.");
 
-        var customer = await _customerRepo.GetByCPFAsync(request.Customer.CPF)
-                    ?? await _customerRepo.CreateAsync(new Customer
-                       {
-                           Name  = request.Customer.Name,
-                           Email = request.Customer.Email,
-                           CPF   = request.Customer.CPF,
-                           Phone = request.Customer.Phone
-                       });
+        var existingCustomer = await _customerRepo.GetByCPFAsync(request.Customer.CPF);
+        if (existingCustomer is not null && !existingCustomer.IsActive)
+            return UnprocessableEntity(new { reason = "Cliente inativo. Não é possível realizar reservas." });
 
-        var price = _pricingService.CalculatePrice(
+        var customer = existingCustomer
+                    ?? await _customerRepo.CreateAsync(new Customer
+                    {
+                        Name = request.Customer.Name,
+                        Email = request.Customer.Email,
+                        CPF = request.Customer.CPF,
+                        Phone = request.Customer.Phone
+                    });
+
+        // Subtotal sem ajuste de pagamento — persistido em TotalAmount
+        var prePayment = _pricingService.CalculatePrePaymentPrice(
+            flight.BasePriceEconomy,
+            request.FareClass,
+            request.Passengers.Count);
+
+        // Total final com ajuste de pagamento — cobrado no Payment
+        var finalPrice = _pricingService.CalculatePrice(
             flight.BasePriceEconomy,
             request.FareClass,
             request.Passengers.Count,
@@ -62,24 +73,24 @@ public class BookingsController : ControllerBase
         var booking = new Booking
         {
             BookingCode = GenerateBookingCode(),
-            CustomerId  = customer.Id,
-            FlightId    = request.FlightId,
-            FareClass   = request.FareClass,
-            Status      = BookingStatus.Confirmed,
-            TotalAmount = price.TotalAmount,
-            Passengers  = request.Passengers
+            CustomerId = customer.Id,
+            FlightId = request.FlightId,
+            FareClass = request.FareClass,
+            Status = BookingStatus.Confirmed,
+            TotalAmount = prePayment.TotalAmount,
+            Passengers = request.Passengers
                 .Select(p => new Passenger
                 {
-                    Name      = p.Name,
-                    CPF       = p.CPF,
+                    Name = p.Name,
+                    CPF = p.CPF,
                     BirthDate = p.BirthDate
                 }).ToList(),
             Payment = new Payment
             {
-                Method        = request.PaymentMethod,
-                Amount        = price.TotalAmount,
-                Status        = "Confirmed",
-                PaidAt        = DateTime.UtcNow,
+                Method = request.PaymentMethod,
+                Amount = finalPrice.TotalAmount,
+                Status = "Confirmed",
+                PaidAt = DateTime.UtcNow,
                 TransactionId = Guid.NewGuid().ToString("N")[..16].ToUpper()
             }
         };
@@ -87,7 +98,11 @@ public class BookingsController : ControllerBase
         var created = await _bookingRepo.CreateAsync(booking);
         await _flightRepo.UpdateSeatsAsync(request.FlightId, request.FareClass, -request.Passengers.Count);
 
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, new CreateBookingResponse
+        {
+            Booking = created,
+            PriceBreakdown = prePayment
+        });
     }
 
     /// <summary>Retorna uma reserva pelo ID.</summary>
@@ -132,8 +147,8 @@ public class BookingsController : ControllerBase
 
         return Ok(new
         {
-            BookingId        = id,
-            BookingCode      = booking.BookingCode,
+            BookingId = id,
+            BookingCode = booking.BookingCode,
             refund.RefundAmount,
             refund.RefundPercentage,
             refund.Reason

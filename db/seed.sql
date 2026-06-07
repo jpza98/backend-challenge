@@ -29,7 +29,7 @@ VALUES
 ('LA1234', 1, 'GIG', 'GRU', '2026-06-15 07:00:00', '2026-06-15 08:00:00', 280.00, 180, 25, 'Scheduled'),
 ('G3678',  2, 'BSB', 'FOR', '2026-07-10 11:00:00', '2026-07-10 14:30:00', 620.00,  90, 12, 'Scheduled');
 
-INSERT INTO Customers (Name, Email, CPF, Phone) VALUES
-('João Silva',   'joao.silva@email.com',   '12345678901', '11999991111'),
-('Maria Santos', 'maria.santos@email.com', '98765432100', '21999992222'),
-('Pedro Costa',  'pedro.costa@email.com',  '11122233344', '31999993333');
+INSERT INTO Customers (Name, Email, CPF, Phone, IsActive) VALUES
+('João Silva',   'joao.silva@email.com',   '12345678901', '11999991111', 1),
+('Maria Santos', 'maria.santos@email.com', '98765432100', '21999992222', 1),
+('Pedro Costa',  'pedro.costa@email.com',  '11122233344', '31999993333', 0); -- inativo para testar 422

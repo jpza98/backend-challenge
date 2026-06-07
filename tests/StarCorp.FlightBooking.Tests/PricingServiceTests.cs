@@ -25,9 +25,9 @@ public class PricingServiceTests
         // Total = 614.25 - 30.7125 = 583.5375
         var result = _sut.CalculatePrice(500m, FareClass.Economy, 1, PaymentMethod.Pix);
 
-        Assert.Equal(500m,      result.BaseAmount);
-        Assert.Equal(85m,       result.Taxes);
-        Assert.Equal(29.25m,    result.ServiceFee);
+        Assert.Equal(500m, result.BaseAmount);
+        Assert.Equal(85m, result.Taxes);
+        Assert.Equal(29.25m, result.ServiceFee);
         Assert.Equal(-30.7125m, result.PaymentAdjustment);
         Assert.Equal(583.5375m, result.TotalAmount);
     }
@@ -54,7 +54,7 @@ public class PricingServiceTests
     [Fact]
     public void Executive_HasTwoPointFiveMultiplier()
     {
-        var economy   = _sut.CalculatePrice(400m, FareClass.Economy,   1, PaymentMethod.Pix);
+        var economy = _sut.CalculatePrice(400m, FareClass.Economy, 1, PaymentMethod.Pix);
         var executive = _sut.CalculatePrice(400m, FareClass.Executive, 1, PaymentMethod.Pix);
 
         // Base executiva deve ser exatamente 2.5× a econômica
@@ -104,9 +104,52 @@ public class PricingServiceTests
     [Fact]
     public void Pix_IsAlwaysCheaperThan_CreditCard_ForSameFlight()
     {
-        var pix    = _sut.CalculatePrice(500m, FareClass.Economy, 1, PaymentMethod.Pix);
+        var pix = _sut.CalculatePrice(500m, FareClass.Economy, 1, PaymentMethod.Pix);
         var credit = _sut.CalculatePrice(500m, FareClass.Economy, 1, PaymentMethod.CreditCard);
 
         Assert.True(pix.TotalAmount < credit.TotalAmount);
+    }
+
+    // ─── CalculatePrePaymentPrice ─────────────────────────────────────────────
+
+    [Fact]
+    public void PrePayment_HasZeroPaymentAdjustment()
+    {
+        var result = _sut.CalculatePrePaymentPrice(500m, FareClass.Economy, 1);
+
+        Assert.Equal(0m, result.PaymentAdjustment);
+    }
+
+    [Fact]
+    public void PrePayment_TotalEqualsBaseAndTaxesAndServiceFee()
+    {
+        var result = _sut.CalculatePrePaymentPrice(500m, FareClass.Economy, 1);
+
+        Assert.Equal(result.BaseAmount + result.Taxes + result.ServiceFee, result.TotalAmount);
+    }
+
+    [Fact]
+    public void PrePayment_MatchesBaseComponentsOfCalculatePrice()
+    {
+        // Os componentes base (sem ajuste de pagamento) devem ser idênticos nos dois métodos
+        var pre = _sut.CalculatePrePaymentPrice(800m, FareClass.Executive, 3);
+        var full = _sut.CalculatePrice(800m, FareClass.Executive, 3, PaymentMethod.CreditCard);
+
+        Assert.Equal(pre.BaseAmount,  full.BaseAmount);
+        Assert.Equal(pre.Taxes,       full.Taxes);
+        Assert.Equal(pre.ServiceFee,  full.ServiceFee);
+        Assert.Equal(pre.TotalAmount, full.TotalAmount - full.PaymentAdjustment);
+    }
+
+    [Fact]
+    public void PrePayment_Economy_OnePassenger_MatchesKnownValues()
+    {
+        // Base = 500, Taxes = 85, SvcFee = 29.25, Total = 614.25
+        var result = _sut.CalculatePrePaymentPrice(500m, FareClass.Economy, 1);
+
+        Assert.Equal(500m,    result.BaseAmount);
+        Assert.Equal(85m,     result.Taxes);
+        Assert.Equal(29.25m,  result.ServiceFee);
+        Assert.Equal(614.25m, result.TotalAmount);
     }
 }

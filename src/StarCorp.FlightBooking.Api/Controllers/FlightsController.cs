@@ -9,22 +9,22 @@ namespace StarCorp.FlightBooking.Api.Controllers;
 public class FlightsController : ControllerBase
 {
     private readonly IFlightRepository _flightRepo;
-    private readonly IPricingService   _pricingService;
+    private readonly IPricingService _pricingService;
 
     public FlightsController(IFlightRepository flightRepo, IPricingService pricingService)
     {
-        _flightRepo     = flightRepo;
+        _flightRepo = flightRepo;
         _pricingService = pricingService;
     }
 
     /// <summary>Pesquisa voos disponíveis.</summary>
     [HttpGet]
     public async Task<IActionResult> Search(
-        [FromQuery] string?    origin,
-        [FromQuery] string?    destination,
-        [FromQuery] DateTime?  date,
+        [FromQuery] string? origin,
+        [FromQuery] string? destination,
+        [FromQuery] DateTime? date,
         [FromQuery] FareClass? fareClass,
-        [FromQuery] int        passengers = 1)
+        [FromQuery] int passengers = 1)
     {
         if (passengers < 1)
             return BadRequest("O número de passageiros deve ser pelo menos 1.");
@@ -45,8 +45,8 @@ public class FlightsController : ControllerBase
     [HttpGet("{id:int}/price")]
     public async Task<IActionResult> GetPrice(
         int id,
-        [FromQuery] FareClass     fareClass,
-        [FromQuery] int           passengers,
+        [FromQuery] FareClass fareClass,
+        [FromQuery] int passengers,
         [FromQuery] PaymentMethod paymentMethod)
     {
         if (passengers < 1)

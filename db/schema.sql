@@ -35,10 +35,19 @@ BEGIN
         Email     NVARCHAR(200) NOT NULL,
         CPF       NVARCHAR(11)  NOT NULL,
         Phone     NVARCHAR(20)  NULL,
+        IsActive  BIT           NOT NULL DEFAULT 1,
         CreatedAt DATETIME2     NOT NULL DEFAULT GETUTCDATE(),
         CONSTRAINT UQ_Customers_Email UNIQUE (Email),
         CONSTRAINT UQ_Customers_CPF   UNIQUE (CPF)
     );
+END
+
+-- Adiciona IsActive em bases que rodaram o schema antes dessa coluna existir
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE  Name = N'IsActive' AND Object_ID = Object_ID(N'Customers'))
+BEGIN
+    ALTER TABLE Customers ADD IsActive BIT NOT NULL DEFAULT 1;
 END
 
 IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Bookings' AND xtype='U')

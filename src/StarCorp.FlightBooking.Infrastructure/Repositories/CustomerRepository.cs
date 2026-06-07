@@ -39,9 +39,9 @@ public class CustomerRepository : ICustomerRepository
     public async Task<Customer> CreateAsync(Customer customer)
     {
         const string sql = """
-            INSERT INTO Customers (Name, Email, CPF, Phone, CreatedAt)
+            INSERT INTO Customers (Name, Email, CPF, Phone, IsActive, CreatedAt)
             OUTPUT INSERTED.Id
-            VALUES (@Name, @Email, @CPF, @Phone, @CreatedAt)
+            VALUES (@Name, @Email, @CPF, @Phone, @IsActive, @CreatedAt)
             """;
 
         using var conn = CreateConnection();
