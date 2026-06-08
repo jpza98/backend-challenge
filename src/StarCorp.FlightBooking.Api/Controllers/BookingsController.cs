@@ -38,7 +38,7 @@ public class BookingsController : ControllerBase
         if (flight is null)
             return NotFound("Voo não encontrado.");
 
-        if (flight.Status != "Scheduled")
+        if (flight.Status != FlightStatus.Scheduled)
             return Conflict("Voo não está disponível para reserva.");
 
         if (!flight.HasAvailableSeats(request.FareClass, request.Passengers.Count))
@@ -143,7 +143,7 @@ public class BookingsController : ControllerBase
             BookingId = booking.Id,
             Method = request.PaymentMethod,
             Amount = price.TotalAmount,
-            Status = "Confirmed",
+            Status = PaymentStatus.Confirmed,
             PaidAt = DateTime.UtcNow,
             TransactionId = Guid.NewGuid().ToString("N")[..16].ToUpper()
         };

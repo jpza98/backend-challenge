@@ -11,6 +11,8 @@ public static class DapperConfig
         SqlMapper.AddTypeHandler(new EnumTypeHandler<FareClass>());
         SqlMapper.AddTypeHandler(new EnumTypeHandler<BookingStatus>());
         SqlMapper.AddTypeHandler(new EnumTypeHandler<PaymentMethod>());
+        SqlMapper.AddTypeHandler(new EnumTypeHandler<FlightStatus>());
+        SqlMapper.AddTypeHandler(new EnumTypeHandler<PaymentStatus>());
     }
 
     private sealed class EnumTypeHandler<T> : SqlMapper.TypeHandler<T> where T : struct, Enum

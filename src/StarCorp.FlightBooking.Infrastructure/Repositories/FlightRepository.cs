@@ -38,14 +38,16 @@ public class FlightRepository : IFlightRepository
         return results.FirstOrDefault();
     }
 
-    public async Task<IEnumerable<Flight>> SearchAsync(
+    public async Task<(IEnumerable<Flight> Items, int Total)> SearchAsync(
         string? origin,
         string? destination,
         DateTime? date,
         FareClass? fareClass,
         int passengers,
-        decimal? minPrice = null,
-        decimal? maxPrice = null)
+        decimal? minPrice,
+        decimal? maxPrice,
+        int page,
+        int pageSize)
     {
         var conditions = new List<string> { "f.Status = 'Scheduled'", "f.DepartureTime > GETUTCDATE()" };
         var parameters = new DynamicParameters();
@@ -91,23 +93,34 @@ public class FlightRepository : IFlightRepository
             parameters.Add("MaxPrice", maxPrice.Value);
         }
 
+        parameters.Add("Offset", (page - 1) * pageSize);
+        parameters.Add("PageSize", pageSize);
+
+        var where = string.Join(" AND ", conditions);
+
         var sql = $"""
+            SELECT COUNT(*) FROM Flights f WHERE {where};
+
             SELECT f.Id, f.FlightNumber, f.AirlineId, f.Origin, f.Destination,
                    f.DepartureTime, f.ArrivalTime, f.BasePriceEconomy,
                    f.AvailableSeatsEconomy, f.AvailableSeatsExecutive, f.Status,
                    a.Id, a.Name, a.IataCode, a.Country
             FROM   Flights  f
             JOIN   Airlines a ON a.Id = f.AirlineId
-            WHERE  {string.Join(" AND ", conditions)}
-            ORDER  BY f.DepartureTime
+            WHERE  {where}
+            ORDER  BY f.DepartureTime, f.Id
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
             """;
 
         using var conn = CreateConnection();
-        return await conn.QueryAsync<Flight, Airline, Flight>(
-            sql,
+        using var multi = await conn.QueryMultipleAsync(sql, parameters);
+
+        var total = await multi.ReadFirstAsync<int>();
+        var items = multi.Read<Flight, Airline, Flight>(
             (flight, airline) => { flight.Airline = airline; return flight; },
-            parameters,
             splitOn: "Id");
+
+        return (items, total);
     }
 
     public async Task<bool> UpdateSeatsAsync(int flightId, FareClass fareClass, int delta)

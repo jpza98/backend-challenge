@@ -8,7 +8,7 @@ public class Payment
     public int BookingId { get; set; }
     public PaymentMethod Method { get; set; }
     public decimal Amount { get; set; }
-    public string Status { get; set; } = "Pending";
+    public PaymentStatus Status { get; set; } = PaymentStatus.Pending;
     public DateTime? PaidAt { get; set; }
     public string? TransactionId { get; set; }
 }

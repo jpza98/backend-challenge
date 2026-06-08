@@ -15,7 +15,7 @@ public class Flight
     public decimal BasePriceEconomy { get; set; }
     public int AvailableSeatsEconomy { get; set; }
     public int AvailableSeatsExecutive { get; set; }
-    public string Status { get; set; } = "Scheduled";
+    public FlightStatus Status { get; set; } = FlightStatus.Scheduled;
 
     public TimeSpan Duration => ArrivalTime - DepartureTime;
 

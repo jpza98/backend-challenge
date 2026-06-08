@@ -117,7 +117,7 @@ public class BookingRepository : IBookingRepository
                     booking.Payment.BookingId,
                     Method = booking.Payment.Method.ToString(),
                     booking.Payment.Amount,
-                    booking.Payment.Status,
+                    Status = booking.Payment.Status.ToString(),
                     booking.Payment.PaidAt,
                     booking.Payment.TransactionId
                 }, tx);
@@ -155,7 +155,7 @@ public class BookingRepository : IBookingRepository
             payment.BookingId,
             Method = payment.Method.ToString(),
             payment.Amount,
-            payment.Status,
+            Status = payment.Status.ToString(),
             payment.PaidAt,
             payment.TransactionId
         });

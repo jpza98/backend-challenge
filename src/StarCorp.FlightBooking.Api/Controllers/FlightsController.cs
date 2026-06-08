@@ -36,11 +36,10 @@ public class FlightsController : ControllerBase
         if (page < 1) page = 1;
         if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-        var flights = await _flightRepo.SearchAsync(origin, destination, date, fareClass, passengers, minPrice, maxPrice);
+        var (items, total) = await _flightRepo.SearchAsync(
+            origin, destination, date, fareClass, passengers, minPrice, maxPrice, page, pageSize);
 
-        var total = flights.Count();
         var totalPages = (int)Math.Ceiling(total / (double)pageSize);
-        var items = flights.Skip((page - 1) * pageSize).Take(pageSize);
 
         return Ok(new
         {

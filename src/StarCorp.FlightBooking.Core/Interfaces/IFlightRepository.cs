@@ -6,6 +6,8 @@ namespace StarCorp.FlightBooking.Core.Interfaces;
 public interface IFlightRepository
 {
     Task<Flight?> GetByIdAsync(int id);
-    Task<IEnumerable<Flight>> SearchAsync(string? origin, string? destination, DateTime? date, FareClass? fareClass, int passengers, decimal? minPrice = null, decimal? maxPrice = null);
+    Task<(IEnumerable<Flight> Items, int Total)> SearchAsync(
+        string? origin, string? destination, DateTime? date, FareClass? fareClass,
+        int passengers, decimal? minPrice, decimal? maxPrice, int page, int pageSize);
     Task<bool> UpdateSeatsAsync(int flightId, FareClass fareClass, int delta);
 }
