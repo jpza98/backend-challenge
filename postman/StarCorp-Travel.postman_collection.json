@@ -1,0 +1,300 @@
+{
+  "info": {
+    "name": "StarCorp Travel - Flight Booking API",
+    "description": "Collection do desafio StarCorp. Rode na ordem (Collection Runner) para executar o fluxo completo: buscar voo -> criar reserva -> consultar -> pagar -> cancelar. O bookingId e o bookingCode sao capturados automaticamente na criacao e reutilizados nas requests seguintes.\n\nBase URL padrao: http://localhost:5129 (perfil http). Ajuste a variavel baseUrl se necessario.\n\nDados de seed usados: voo id 1 (GRU->SSA), cliente ativo Joao Silva (CPF 12345678901, id 1), cliente inativo Pedro Costa (CPF 11122233344).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5129", "type": "string" },
+    { "key": "bookingId", "value": "", "type": "string" },
+    { "key": "bookingCode", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Voos",
+      "item": [
+        {
+          "name": "Buscar voos (paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights?page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            },
+            "description": "Lista voos com paginacao. A resposta traz Page, PageSize, Total, TotalPages e Items."
+          }
+        },
+        {
+          "name": "Buscar voos com filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights?origin=GRU&destination=SSA&fareClass=Economy&minPrice=100&maxPrice=500&page=1&pageSize=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights"],
+              "query": [
+                { "key": "origin", "value": "GRU" },
+                { "key": "destination", "value": "SSA" },
+                { "key": "fareClass", "value": "Economy" },
+                { "key": "minPrice", "value": "100" },
+                { "key": "maxPrice", "value": "500" },
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "10" }
+              ]
+            },
+            "description": "Filtros opcionais combinaveis: origem, destino, classe e faixa de preco."
+          }
+        },
+        {
+          "name": "Voo por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights", "1"]
+            }
+          }
+        },
+        {
+          "name": "Simular preco (extra)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/flights/1/price?fareClass=Executive&passengers=2&paymentMethod=Pix",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "flights", "1", "price"],
+              "query": [
+                { "key": "fareClass", "value": "Executive" },
+                { "key": "passengers", "value": "2" },
+                { "key": "paymentMethod", "value": "Pix" }
+              ]
+            },
+            "description": "Endpoint extra (fora do escopo): simula o preco de um voo para os parametros dados."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Fluxo de reserva (rodar nesta ordem)",
+      "item": [
+        {
+          "name": "Criar reserva (cliente ativo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 ou 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const j = pm.response.json();",
+                  "const b = j.booking || j;",
+                  "pm.collectionVariables.set('bookingId', b.id);",
+                  "pm.collectionVariables.set('bookingCode', b.bookingCode);",
+                  "pm.test('Retornou bookingId', () => pm.expect(b.id).to.be.a('number'));",
+                  "pm.test('Tem breakdown de preco', () => pm.expect(j.priceBreakdown || j.PriceBreakdown).to.not.be.undefined);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": 1,\n  \"fareClass\": \"Economy\",\n  \"customer\": {\n    \"name\": \"Joao Silva\",\n    \"email\": \"joao.silva@email.com\",\n    \"cpf\": \"12345678901\",\n    \"phone\": \"11999991111\"\n  },\n  \"passengers\": [\n    {\n      \"name\": \"Joao Silva\",\n      \"cpf\": \"12345678901\",\n      \"birthDate\": \"1990-05-12\"\n    },\n    {\n      \"name\": \"Ana Silva\",\n      \"cpf\": \"45678912300\",\n      \"birthDate\": \"1992-09-30\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings"]
+            },
+            "description": "Cria a reserva (sem pagamento). Retorna a reserva + breakdown do preco (subtotal + impostos + taxa de servico, sem o ajuste de pagamento)."
+          }
+        },
+        {
+          "name": "Consultar reserva por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Consultar reserva por codigo (extra)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/code/{{bookingCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "code", "{{bookingCode}}"]
+            }
+          }
+        },
+        {
+          "name": "Pagar reserva (Pix)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethod\": \"Pix\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}", "payment"]
+            },
+            "description": "Processa o pagamento. Aplica o ajuste do metodo (Pix = -5%) e fecha o TOTAL. Metodos validos: CreditCard, Pix, Boleto."
+          }
+        },
+        {
+          "name": "Reservas do cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/customer/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "customer", "1"]
+            },
+            "description": "Lista as reservas do cliente id 1 (Joao Silva no seed)."
+          }
+        },
+        {
+          "name": "Cancelar reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tem valor de reembolso', () => pm.expect(pm.response.json()).to.have.property('refundAmount'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "{{bookingId}}", "cancel"]
+            },
+            "description": "Cancela e calcula o reembolso. Como o cancelamento ocorre logo apos o pagamento, cai na regra especial das 24h: reembolso integral."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Casos de erro (bordas)",
+      "item": [
+        {
+          "name": "Criar reserva - cliente inativo (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 422 (cliente inativo)', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightId\": 1,\n  \"fareClass\": \"Economy\",\n  \"customer\": {\n    \"name\": \"Pedro Costa\",\n    \"email\": \"pedro.costa@email.com\",\n    \"cpf\": \"11122233344\",\n    \"phone\": \"31999993333\"\n  },\n  \"passengers\": [\n    {\n      \"name\": \"Pedro Costa\",\n      \"cpf\": \"11122233344\",\n      \"birthDate\": \"1985-03-22\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings"]
+            },
+            "description": "Pedro Costa esta com IsActive = 0 no seed. A API deve recusar com 422."
+          }
+        },
+        {
+          "name": "Consultar reserva inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "999999"]
+            }
+          }
+        },
+        {
+          "name": "Pagar reserva inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethod\": \"CreditCard\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/999999/payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "bookings", "999999", "payment"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
